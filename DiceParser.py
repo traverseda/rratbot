@@ -98,7 +98,10 @@ class DiceParser:
                 elif t['val'] == ')':
                     while len(stack) > 0 and stack[-1]['val'] != '(':
                         output_stack.append(stack.pop(-1))
-                    stack.pop(-1)
+                    if len(stack) > 0:
+                        stack.pop(-1)
+                    else:
+                        raise ValueError('Unmatched parentheses at {0}'.format(t['index']))
                     if len(stack) > 0 and stack[-1]['type'] == 'func':
                         if function_arg_count_stack[-1] > 1:
                             raise ValueError('Not enough arguments for function "{0}" at {1}'
