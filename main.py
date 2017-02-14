@@ -2,6 +2,8 @@ import discord
 from discord.ext import commands
 import random
 from DiceParser import DiceParser
+from concurrent.futures import ProcessPoolExecutor
+import asyncio, feedparser
 
 description = '''An example bot to showcase the discord.ext.commands extension
 module.
@@ -22,16 +24,36 @@ async def add(left : int, right : int):
     """Adds two numbers together."""
     await bot.say(left + right)
 
-DP = DiceParser()
+
+def processDice(dice):
+    """A wrapper for running our DiceParser in a seperate procces"""
+    print("waiting on "+dice)
+    DP = DiceParser()
+    result = DP.evaluateInfix(dice)
+    print(result)
+    print("finished proccessing dice. This *should* be returning...")
+    return result
+
+executor = ProcessPoolExecutor()
 
 @bot.command()
 async def roll(dice : str):
     """Rolls a dice using the custom DiceParser."""
-    try:
-        result = DP.evaluateInfix(dice)
-    except ValueError as err:
-        await bot.say(err)
-        return
+    result=None
+    startTime = bot.loop.time()
+    subprocess = bot.loop.run_in_executor(executor, processDice, dice)
+    while True:
+        if bot.loop.time() > startTime+10:
+            subprocess.cancel()
+            result = "Operation took longer than 10 seconds. Aborted."
+            break
+        try:
+            result = subprocess.result()
+            if subprocess.exception():
+                result = subprocess.exception()
+        except asyncio.InvalidStateError:
+            asyncio.sleep(0.10)
+    print(result)
     await bot.say(result)
 
 @bot.command(description='For when you wanna settle the score some other way')
@@ -53,7 +75,6 @@ async def _bot():
     """Is the bot cool?"""
     await bot.say('Yes, the bot is cool.')
 
-import asyncio, feedparser
 
 rssUrl="https://www.reddit.com/r/rational/new/.rss"
 parsedFeed = feedparser.parse(rssUrl)
