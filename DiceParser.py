@@ -1,6 +1,14 @@
 import random
 import math
+import re
 import operator
+
+def simplifyNumber(val):
+    if type(val) == complex and val.imag == 0:
+        val = val.real
+    if type(val) == float and val.is_integer():
+        val = int(val)
+    return val
 
 class DiceParser:
     # OP: [Precedence, Associativity]
@@ -31,6 +39,10 @@ class DiceParser:
         'floor': {'args':1, 'func':math.floor},
         'if': {'args':3, 'func':lambda a,b,c:b if a else c}
     }
+
+    REGEXES = {
+        'number': r'(?:[1-9][0-9]*\.?|0\.)[0-9]*(?:[eE][0-9]*)?j?'
+    }
     
     def __init__(self):
         self.index = 0
@@ -40,42 +52,55 @@ class DiceParser:
         postfixtokens = self.InfixToPostfix(roll)
         stack = []
         rolls = []
-        for t in postfixtokens:
-            if t['type'] == 'int':
-                stack.append(int(t['val']))
-            elif t['type'] == 'func':
-                func = DiceParser.FUNCTIONS[t['val']]
-                val = func['func'](*stack[-func['args']:])
-                for i in range(func['args']):
-                    stack.pop(-1)
-                stack.append(val)
-            elif t['type'] == 'op':
-                arg2 = stack.pop(-1)
-                arg1 = stack.pop(-1)
-                val = 0
-                if t['val'] == 'd':
-                    r = []
-                    for i in range(arg1):
-                        r.append(random.randint(1, arg2))
-                    val = sum(r)
-                    rolls.append('{0:d}d{1:d}: {2} = {3}'.format(
-                        arg1, arg2, val, ', '.join(str(x) for x in r)))
-                else:
-                    val = DiceParser.OPERATORS[t['val']]['func'](arg1, arg2)
-                stack.append(val)
-            elif t['type'] == 'uop':
-                arg1 = stack.pop(-1)
-                val = 0
-                if t['val'] == 'dF':
-                    r = []
-                    for i in range(arg1):
-                        r.append(random.randint(-1, 1))
-                    val = sum(r)
-                    rolls.append('{0:d}dF: {1} = {2}'.format(
-                        arg1, val, ', '.join(str(x) for x in r)))
-                else:
-                    val = DiceParser.UNARY_OPERATORS[t['val']]['func'](arg1)
-                stack.append(val)
+        index = 0
+        try:
+            for t in postfixtokens:
+                if t['type'] == 'num':
+                    val = complex(t['val'])
+                    val = simplifyNumber(val)
+                    stack.append(val)
+                elif t['type'] == 'func':
+                    func = DiceParser.FUNCTIONS[t['val']]
+                    val = func['func'](*stack[-func['args']:])
+                    for i in range(func['args']):
+                        stack.pop(-1)
+                    val = simplifyNumber(val)
+                    stack.append(val)
+                elif t['type'] == 'op':
+                    arg2 = stack.pop(-1)
+                    arg1 = stack.pop(-1)
+                    val = 0
+                    if t['val'] == 'd':
+                        r = []
+                        for i in range(arg1):
+                            r.append(random.randint(1, arg2))
+                        val = sum(r)
+                        rolls.append('{0:d}d{1:d}: {2} = {3}'.format(
+                            arg1, arg2, val, ', '.join(str(x) for x in r)))
+                    else:
+                        val = DiceParser.OPERATORS[t['val']]['func'](arg1, arg2)
+                    val = simplifyNumber(val)
+                    stack.append(val)
+                elif t['type'] == 'uop':
+                    arg1 = stack.pop(-1)
+                    val = 0
+                    if t['val'] == 'dF':
+                        r = []
+                        for i in range(arg1):
+                            r.append(random.randint(-1, 1))
+                        val = sum(r)
+                        rolls.append('{0:d}dF: {1} = {2}'.format(
+                            arg1, val, ', '.join(str(x) for x in r)))
+                    else:
+                        val = DiceParser.UNARY_OPERATORS[t['val']]['func'](arg1)
+                    val = simplifyNumber(val)
+                    stack.append(val)
+                index += 1
+        except TypeError:
+            raise TypeError('Invalid type for operator at index {0}'
+                .format(postfixtokens[index]['index']))
+        except:
+            raise
         if len(stack) != 1:
             print(stack)
             raise ValueError('Roll was invalid, final stack size not 1')
@@ -96,7 +121,7 @@ class DiceParser:
         
         while self.index < len(self.roll):
             t = self.__getToken()
-            if t['type'] == 'int':
+            if t['type'] == 'num':
                 output_stack.append(t)
             elif t['type'] == 'func':
                 if t['val'] in DiceParser.FUNCTIONS:
@@ -190,11 +215,10 @@ class DiceParser:
         self.__skipWhitespace()
 
         startindex = self.index
-        if self.roll[self.index].isdigit():
-            while self.__beforeEnd() and self.roll[self.index+1].isdigit():
-                self.index += 1
-            self.index += 1
-            out = {'index':startindex, 'type':'int','val':self.roll[startindex:self.index]}
+        numRegex = re.match(DiceParser.REGEXES['number'], self.roll[startindex:])
+        if numRegex != None:
+            self.index += len(numRegex.group(0))
+            out = {'index':startindex, 'type':'num','val':numRegex.group(0)}
         elif self.__matchesName(DiceParser.FUNCTIONS, startindex):
             for name in DiceParser.FUNCTIONS:
                 if self.roll.startswith(name, startindex):
