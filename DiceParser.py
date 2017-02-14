@@ -5,7 +5,7 @@ import operator
 class DiceParser:
     # OP: [Precedence, Associativity]
     OPERATORS = {
-        'd': {'pre':5, 'assoc':'NONE', 'func':lambda a,b:NotImplemented},
+        'd': {'pre':101, 'assoc':'NONE', 'func':lambda a,b:NotImplemented},
         '^': {'pre':4, 'assoc':'RIGHT', 'func':operator.pow},
         '*': {'pre':3, 'assoc':'LEFT', 'func':operator.mul},
         '/': {'pre':3, 'assoc':'LEFT', 'func':operator.truediv},
@@ -17,6 +17,12 @@ class DiceParser:
         '!=': {'pre':1, 'assoc':'NONE', 'func':lambda a,b:a!=b},
         '>=': {'pre':1, 'assoc':'NONE', 'func':lambda a,b:a>=b},
         '<=': {'pre':1, 'assoc':'NONE', 'func':lambda a,b:a<=b}
+    }
+
+    UNARY_OPERATORS = {
+        'dF': {'pre':100, 'assoc':'LEFT', 'func':lambda a:NotImplemented},
+        '!': {'pre':5, 'assoc':'LEFT', 'func':math.factorial},
+        '~': {'pre':6, 'assoc':'RIGHT', 'func':lambda a:not a},
     }
 
     # NAME: ARG_COUNT, FUNC
@@ -56,6 +62,19 @@ class DiceParser:
                         arg1, arg2, val, ', '.join(str(x) for x in r)))
                 else:
                     val = DiceParser.OPERATORS[t['val']]['func'](arg1, arg2)
+                stack.append(val)
+            elif t['type'] == 'uop':
+                arg1 = stack.pop(-1)
+                val = 0
+                if t['val'] == 'dF':
+                    r = []
+                    for i in range(arg1):
+                        r.append(random.randint(-1, 1))
+                    val = sum(r)
+                    rolls.append('{0:d}dF: {1} = {2}'.format(
+                        arg1, val, ', '.join(str(x) for x in r)))
+                else:
+                    val = DiceParser.UNARY_OPERATORS[t['val']]['func'](arg1)
                 stack.append(val)
         if len(stack) != 1:
             print(stack)
@@ -111,8 +130,11 @@ class DiceParser:
             elif t['type'] == 'op':
                 if t['val'] in DiceParser.OPERATORS:
                     op = DiceParser.OPERATORS[t['val']]
-                    while len(stack) > 0 and stack[-1]['type'] == 'op':
-                        otherop = DiceParser.OPERATORS[stack[-1]['val']]
+                    while len(stack) > 0 and stack[-1]['type'] in ['op', 'uop']:
+                        if stack[-1]['type'] == 'op':
+                            otherop = DiceParser.OPERATORS[stack[-1]['val']]
+                        else:
+                            otherop = DiceParser.UNARY_OPERATORS[stack[-1]['val']]
                         if op['assoc'] == 'NONE' and otherop['assoc'] == 'NONE' and \
                            op['pre'] == otherop['pre']:
                             raise ValueError('Operator "{0}" cannot be chained with {1} at {2}'
@@ -125,6 +147,24 @@ class DiceParser:
                     stack.append(t)
                 else:
                     raise ValueError('Unknown Operator "{0}" at {1}'.format(t['val'], t['index']))
+            elif t['type'] == 'uop':
+                if t['val'] in DiceParser.UNARY_OPERATORS:
+                    op = DiceParser.UNARY_OPERATORS[t['val']]
+                    if op['assoc'] == 'LEFT':
+                        while len(stack) > 0 and stack[-1]['type'] in ['op', 'uop']:
+                            if stack[-1]['type'] == 'op':
+                                otherop = DiceParser.OPERATORS[stack[-1]['val']]
+                            else:
+                                otherop = DiceParser.UNARY_OPERATORS[stack[-1]['val']]
+                            if op['pre'] < otherop['pre']:
+                                output_stack.append(stack.pop(-1))
+                            else:
+                                break
+                        output_stack.append(t)
+                    else:
+                        stack.append(t)
+                else:
+                    raise ValueError('Unknown Unary Operator "{0}" at {1}'.format(t['val'], t['index']))
             else:
                 raise ValueError('Unknown Token Type "{0}" at {1}'.format(t['type'], t['index']))
         
@@ -155,14 +195,24 @@ class DiceParser:
                 self.index += 1
             self.index += 1
             out = {'index':startindex, 'type':'int','val':self.roll[startindex:self.index]}
-        elif self.__matchesName(DiceParser.OPERATORS, startindex):
-            self.index += 1
-            out = {'index':startindex, 'type':'op','val':self.roll[startindex:self.index]}
         elif self.__matchesName(DiceParser.FUNCTIONS, startindex):
-            while self.__beforeEnd() and self.roll[self.index+1].isalpha():
-                self.index += 1
-            self.index += 1
-            out = {'index':startindex, 'type':'func','val':self.roll[startindex:self.index]}
+            for name in DiceParser.FUNCTIONS:
+                if self.roll.startswith(name, startindex):
+                    self.index += len(name)
+                    out = {'index':startindex, 'type':'func','val':name}
+                    break
+        elif self.__matchesName(DiceParser.UNARY_OPERATORS, startindex):
+            for name in DiceParser.UNARY_OPERATORS:
+                if self.roll.startswith(name, startindex):
+                    self.index += len(name)
+                    out = {'index':startindex, 'type':'uop','val':name}
+                    break
+        elif self.__matchesName(DiceParser.OPERATORS, startindex):
+            for name in DiceParser.OPERATORS:
+                if self.roll.startswith(name, startindex):
+                    self.index += len(name)
+                    out = {'index':startindex, 'type':'op','val':name}
+                    break
         elif self.roll[self.index] == ',':
             self.index += 1
             out = {'index':startindex, 'type':'argsep', 'val':','}
