@@ -35,6 +35,9 @@ async def roll(dice : str):
     except ZeroDivisionError as err:
         await bot.say(err)
         return
+    except TypeError as err:
+        await bot.say(err)
+        return
     await bot.say(result)
 
 @bot.command(description='For when you wanna settle the score some other way')
