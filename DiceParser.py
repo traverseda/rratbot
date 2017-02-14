@@ -115,7 +115,7 @@ class DiceParser:
                             raise ValueError('Operator "{0}" cannot be chained with {1} at {2}'
                                 .format(t['val'], stack[-1]['val'], t['index']))
                         elif (op['assoc'] == 'LEFT' and op['pre'] <= otherop['pre']) or \
-                           (op['assoc'] == 'RIGHT' and op['pre'] < otherop['pre']):
+                           (op['assoc'] in ['RIGHT', 'NONE'] and op['pre'] < otherop['pre']):
                             output_stack.append(stack.pop(-1))
                         else:
                             break
