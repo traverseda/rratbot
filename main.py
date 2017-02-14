@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 import random
+from DiceParser import DiceParser
 
 description = '''An example bot to showcase the discord.ext.commands extension
 module.
@@ -21,20 +22,17 @@ async def add(left : int, right : int):
     """Adds two numbers together."""
     await bot.say(left + right)
 
+DP = DiceParser()
+
 @bot.command()
 async def roll(dice : str):
-    """Rolls a dice in NdN format."""
+    """Rolls a dice using the custom DiceParser."""
     try:
-        rolls, limit = map(int, dice.split('d'))
-    except Exception:
-        await bot.say('Format has to be in NdN!')
+        result = DP.evaluateInfix(dice)
+    except ValueError as err:
+        await bot.say(err)
         return
-    rollResults = [random.randint(1, limit) for r in range(rolls)]
-    if rolls <= 200:
-        result = ', '.join([str(i) for i in rollResults])
-        await bot.say("{} from {}".format(sum(rollResults), rollResults))
-    else:
-        await bot.say("{}".format(sum(rollResults)))
+    await bot.say(result)
 
 @bot.command(description='For when you wanna settle the score some other way')
 async def choose(*choices : str):
