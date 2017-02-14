@@ -28,7 +28,7 @@ DP = DiceParser()
 async def roll(dice : str):
     """Rolls a dice using the custom DiceParser."""
     try:
-        result = DP.evaluateInfix(dice)
+        result = DP.evaluateInfix(dice.strip('` \n\t'))
     except ValueError as err:
         await bot.say(err)
         return
