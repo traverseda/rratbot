@@ -67,6 +67,8 @@ class DiceParser:
                     val = simplifyNumber(val)
                     stack.append(val)
                 elif t['type'] == 'op':
+                    if len(stack) < 2:
+                        raise ValueError('Not enough arguments for "{0}" at {1}'.format(t['val'], t['index']))
                     arg2 = stack.pop(-1)
                     arg1 = stack.pop(-1)
                     val = 0
