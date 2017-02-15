@@ -2,8 +2,6 @@ import discord
 from discord.ext import commands
 import random
 from DiceParser import DiceParser
-from concurrent.futures import ProcessPoolExecutor
-import asyncio, feedparser
 
 description = '''An example bot to showcase the discord.ext.commands extension
 module.
@@ -24,14 +22,12 @@ async def add(left : int, right : int):
     """Adds two numbers together."""
     await bot.say(left + right)
 
-
 def processDice(dice):
     """A wrapper for running our DiceParser in a seperate procces"""
     DP = DiceParser()
-    result = DP.evaluateInfix(dice)
+    result = DP.evaluateInfix(dice.strip('` \n\t'))
     return result
 
-executor = ProcessPoolExecutor()
 
 @bot.command()
 async def roll(dice : str):
@@ -68,6 +64,7 @@ async def _bot():
     """Is the bot cool?"""
     await bot.say('Yes, the bot is cool.')
 
+import asyncio, feedparser
 
 rssUrl="https://www.reddit.com/r/rational/new/.rss"
 parsedFeed = feedparser.parse(rssUrl)
