@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import random
 from DiceParser import DiceParser
+from concurrent.futures import ProcessPoolExecutor
 
 description = '''An example bot to showcase the discord.ext.commands extension
 module.
@@ -22,22 +23,29 @@ async def add(left : int, right : int):
     """Adds two numbers together."""
     await bot.say(left + right)
 
-DP = DiceParser()
+def processDice(dice):
+    """A wrapper for running our DiceParser in a seperate procces"""
+    DP = DiceParser()
+    result = DP.evaluateInfix(dice.strip('` \n\t'))
+    return result
+
+executor = ProcessPoolExecutor()
 
 @bot.command()
 async def roll(dice : str):
     """Rolls a dice using the custom DiceParser."""
     try:
-        result = DP.evaluateInfix(dice.strip('` \n\t'))
+        coro = bot.loop.run_in_executor(executor, processDice, dice)
+        result = await asyncio.wait_for(coro, timeout=10.0, loop=bot.loop)
+    except asyncio.TimeoutError:
+        result="Operation took longer than 10 seconds. Aborted."
     except ValueError as err:
-        await bot.say(err)
-        return
+        result = err
     except ZeroDivisionError as err:
-        await bot.say(err)
-        return
-    except TypeError as err:
-        await bot.say(err)
-        return
+        result = err
+    except Exception as err:
+        print(err)
+        result = "An unhandled exception occured during operation."
     await bot.say(result)
 
 @bot.command(description='For when you wanna settle the score some other way')
