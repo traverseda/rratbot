@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import random
 from DiceParser import DiceParser
+from concurrent.futures import ProcessPoolExecutor
 
 description = '''An example bot to showcase the discord.ext.commands extension
 module.
@@ -28,6 +29,7 @@ def processDice(dice):
     result = DP.evaluateInfix(dice.strip('` \n\t'))
     return result
 
+executor = ProcessPoolExecutor()
 
 @bot.command()
 async def roll(dice : str):
@@ -42,6 +44,7 @@ async def roll(dice : str):
     except ZeroDivisionError as err:
         result = err
     except Exception as err:
+        print(err)
         result = "An unhandled exception occured during operation."
     await bot.say(result)
 
