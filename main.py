@@ -3,6 +3,7 @@ from discord.ext import commands
 import random
 from DiceParser import DiceParser
 from concurrent.futures import ProcessPoolExecutor
+import os
 
 description = '''An example bot to showcase the discord.ext.commands extension
 module.
@@ -18,18 +19,15 @@ async def on_ready():
     print(bot.user.id)
     print('------')
 
-@bot.command()
-async def add(left : int, right : int):
-    """Adds two numbers together."""
-    await bot.say(left + right)
 
 def processDice(dice):
     """A wrapper for running our DiceParser in a seperate procces"""
+    os.nice(15)#Set these subprocesses to a nice low value
     DP = DiceParser()
     result = DP.evaluateInfix(dice.strip('` \n\t'))
     return result
 
-executor = ProcessPoolExecutor()
+executor = ProcessPoolExecutor(10)
 
 @bot.command()
 async def roll(dice : str):
