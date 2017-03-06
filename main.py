@@ -3,7 +3,7 @@ from discord.ext import commands
 import random
 from DiceParser import DiceParser
 from concurrent.futures import ProcessPoolExecutor
-import os
+import os, codecs
 from botCore import bot
 import voting
 
@@ -23,6 +23,14 @@ def processDice(dice):
     return result
 
 executor = ProcessPoolExecutor(10)
+
+
+@bot.command(pass_context=True)
+async def rot13(ctx,*msg : str):
+    await bot.delete_message(ctx.message)
+    msg = " ".join(msg)
+    msg = codecs.encode(msg, 'rot_13')
+    await bot.say("{user} says: `{message}`".format(user=ctx.message.author.mention,message=msg))
 
 @bot.command()
 async def roll(dice : str):

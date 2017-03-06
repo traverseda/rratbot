@@ -33,7 +33,7 @@ async def createVote(ctx,argCount: int, issue=None):
         'interfaces':set(),
     }
     voteStorage[issue]=issueObject
-    msgStr = """To vote anonymously, DM rbot with `?voteInterface {issue}`. Count Votes with `?voteCount {issue}`"
+    msgStr = """To vote anonymously, DM rbot with `?voteInterface {issue}`. Count Votes with `?voteCount {issue}`
     """
     msg = await bot.say(msgStr.format(issue=issue))
     await spawnVoteInterface(issue, bot)
@@ -69,8 +69,11 @@ async def voteInterface(issueID):
 
 asciiEmotes=('🇦','🇧','🇨','🇩','🇪','🇫','🇬','🇭','🇮','🇯','🇰','🇱','🇲','🇳','🇴','🇵','🇶','🇷','🇸','🇹','🇺','🇻','🇼','🇽','🇾','🇿',)
 
-async def spawnVoteInterface(issueID, botInstance):
-    msg = await botInstance.say("Vote on `{}` using reactions below.".format(issueID))
+async def spawnVoteInterface(issueID, botInstance, link=False):
+    if link:
+        pass
+    else:
+        msg = await botInstance.say("Vote on `{}` using reactions below.".format(issueID))
     voteStorage[issueID]['interfaces'].add((msg.channel.id, msg.id))
     voteStorage.sync()
     for c in asciiEmotes[:voteStorage[issueID]['argCount']]:
