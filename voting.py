@@ -19,8 +19,8 @@ async def createVote(ctx,argCount: int, issue=None):
         issue = ''.join(random.choices(string.ascii_uppercase,k=32))
     if not argCount:
         argCount = 0
-    if argCount > 24:
-        await bot.say("Too many options. We can only use 24")
+    if argCount > 20:
+        await bot.say("Too many options. We can only use 20")
         return
     if issue in voteStorage:
         await bot.say("An issue with that name already exists")
@@ -61,7 +61,7 @@ async def voteCount(issueID):
     msg=[]
     msgStr="{} : {}% with {} votes"
     voteCount = sum(finalVotes.values())
-    msg.append("Total: "+str(voteCount))
+    msg.append("Total: {}, Participants: {}".format(str(voteCount),len(finalVotes.key())))
     for key,value in finalVotes.items():
        msg.append(msgStr.format(key,round((value/voteCount)*100),value))
     await bot.say("\n".join(msg))
