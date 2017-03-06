@@ -27,6 +27,7 @@ executor = ProcessPoolExecutor(10)
 
 @bot.command(pass_context=True)
 async def rot13(ctx,*msg : str):
+    """Deletes your message and posts it again as rot13"""
     await bot.delete_message(ctx.message)
     msg = " ".join(msg)
     msg = codecs.encode(msg, 'rot_13')

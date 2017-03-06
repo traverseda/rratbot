@@ -6,7 +6,7 @@ voteStorage = shelve.open('./storage/votes.shelve',writeback=True)
 @bot.command(pass_context=True)
 async def createVote(ctx,argCount: int, issue=None):
     """
-    Votes are normalized to lowercase letters only.
+    Usage `?createVote {number of arguments}, {name of issue}`
 
     That means
         `##Vote1!!!, 8`
@@ -17,6 +17,8 @@ async def createVote(ctx,argCount: int, issue=None):
     """
     if not issue:
         issue = ''.join(random.choices(string.ascii_uppercase,k=32))
+    if not argCount:
+        argCount = 0
     if argCount > 24:
         await bot.say("Too many options. We can only use 24")
         return
@@ -40,6 +42,7 @@ async def createVote(ctx,argCount: int, issue=None):
 
 @bot.command()
 async def voteCount(issueID):
+    """Count votes. Usage `?voteCounts {name of issue}` """
     issue = voteStorage[issueID]
     votes = collections.defaultdict(set)
     for msg in issue['interfaces']:
@@ -65,6 +68,7 @@ async def voteCount(issueID):
 
 @bot.command()
 async def voteInterface(issueID):
+    """Creates an interface to vote on an issue."""
     await spawnVoteInterface(issueID, bot)
 
 asciiEmotes=('🇦','🇧','🇨','🇩','🇪','🇫','🇬','🇭','🇮','🇯','🇰','🇱','🇲','🇳','🇴','🇵','🇶','🇷','🇸','🇹','🇺','🇻','🇼','🇽','🇾','🇿',)
