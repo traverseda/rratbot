@@ -4,13 +4,8 @@ import random
 from DiceParser import DiceParser
 from concurrent.futures import ProcessPoolExecutor
 import os
-
-description = '''An example bot to showcase the discord.ext.commands extension
-module.
-
-There are a number of utility commands being showcased here.'''
-bot = commands.Bot(command_prefix='?', description=description)
-
+from botCore import bot
+import voting
 
 @bot.event
 async def on_ready():
