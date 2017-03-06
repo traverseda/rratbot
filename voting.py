@@ -4,7 +4,7 @@ from discord import client
 voteStorage = shelve.open('./storage/votes.shelve',writeback=True)
 
 @bot.command(pass_context=True)
-async def createVote(ctx,*voteText):
+async def createVote(ctx,argCount: int, issue=None):
     """
     Votes are normalized to lowercase letters only.
 
@@ -15,9 +15,6 @@ async def createVote(ctx,*voteText):
     are both votes on the same issue.
     We only actually use that first line for anything.
     """
-    voteText=" ".join(voteText)
-    issue, argCount = voteText.split(",")
-    argCount = int(argCount)
     if not issue:
         issue = ''.join(random.choices(string.ascii_uppercase,k=32))
     if argCount > 24:
@@ -26,7 +23,6 @@ async def createVote(ctx,*voteText):
     if issue in voteStorage:
         await bot.say("An issue with that name already exists")
         return
-
 
     issue=[char for char in issue.lower() if char.isalpha()]
     issue="".join(issue)
@@ -37,7 +33,9 @@ async def createVote(ctx,*voteText):
         'interfaces':set(),
     }
     voteStorage[issue]=issueObject
-    msg = await bot.say("You can create a new interface to vote on this issue (say, in a PM where it's private) with `?voteInterface {issue}`.\nCount with `?voteCount {issue}`".format(issue=issue))
+    msgStr = """To vote anonymously, DM rbot with `?voteInterface {issue}`. Count Votes with `?voteCount {issue}`"
+    """
+    msg = await bot.say(msgStr.format(issue=issue))
     await spawnVoteInterface(issue, bot)
 
 @bot.command()
